@@ -22,5 +22,5 @@ UU lpc.digital-loggers.com admin:4321 name status on 4off status
 UU lpc.digital-loggers.com admin:4321 run010 name status
 ```
 
-[Digital Loggers UU tool] https://www.digital-loggers.com/cex.html
-[Home Assistant] https://www.home-assistant.io/
+[Digital Loggers UU tool]: https://www.digital-loggers.com/cex.html
+[Home Assistant]: https://www.home-assistant.io/
