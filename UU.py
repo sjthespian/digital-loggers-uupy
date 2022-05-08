@@ -60,6 +60,7 @@ def cmd(arg=None):
     global response
     global type
     global args
+    global outputdata
 
     arg = arg.lower()
     arg = re.sub("(^[^1-8])", r"a\1", arg)
@@ -138,6 +139,7 @@ def cmd(arg=None):
 
     m = re.search("^([0-8a])name$", arg)
     if m:
+        outputdata.setdefault("outlets", {})
         n = m.group(1)
         if norefresh and response:
             m = re.search(
@@ -202,9 +204,9 @@ def cmd(arg=None):
                 vah = f"{m.group(3)}V" if float(m.group(3)) > 0 else "n/a"
                 cah = f"{m.group(4)}A" if float(m.group(4)) > 0 else "n/a"
                 wha = f"{float(m.group(5))/10.0}kWh" if float(m.group(5)) > 0 else "n/a"
-                outputdata["power"]["A"]["voltage"] = vah
-                outputdata["power"]["A"]["amperage"] = cah
-                outputdata["power"]["A"]["wattage"] = wha
+                outputdata["power"]["A"]["voltage"] = float(vah.strip("V"))
+                outputdata["power"]["A"]["amperage"] = float(cah.strip("A"))
+                outputdata["power"]["A"]["wattage"] = float(wha.strip("kWh"))
             if n in ["5", "6", "7", "8", "a"]:
                 outputdata["power"]["B"] = {}
                 m = re.search(
@@ -215,9 +217,9 @@ def cmd(arg=None):
                 vbh = f"{m.group(3)}V" if float(m.group(3)) > 0 else "n/a"
                 cbh = f"{m.group(4)}A" if float(m.group(4)) > 0 else "n/a"
                 whb = f"{float(m.group(5))/10.0}kWh" if float(m.group(5)) > 0 else "n/a"
-                outputdata["power"]["B"]["voltage"] = vbh
-                outputdata["power"]["B"]["amperage"] = cbh
-                outputdata["power"]["B"]["wattage"] = whb
+                outputdata["power"]["B"]["voltage"] = float(vbh.strip("V"))
+                outputdata["power"]["B"]["amperage"] = float(cbh.strip("A"))
+                outputdata["power"]["B"]["wattage"] = float(whb.strip("kWh"))
 
         return True
 
@@ -240,7 +242,7 @@ def totext(data):
     if "power" in data:
         for bus in data["power"]:
             print(
-                f"Bus {bus}: V={data['power'][bus]['voltage']} I={data['power'][bus]['amperage']} W={data['power'][bus]['wattage']}"
+                f"Bus {bus}: V={data['power'][bus]['voltage']:7.3f}V I={data['power'][bus]['amperage']:7.5f}A W={data['power'][bus]['wattage']:7.1f}kWh"
             )
     if "outlets" in data:
         if "name" in data["outlets"]:
@@ -253,6 +255,7 @@ def totext(data):
 
 def main():
     global base
+    global outputdata
 
     # Parse command line
     parser = argparse.ArgumentParser(
@@ -275,6 +278,11 @@ def main():
 
     output_json = args.json
     debug = args.debug
+
+    # Check for invalid arg combination
+    if "interact" in args_remaining and output_json:
+        print("ERROR: --json cannot be used in interactive mode!")
+        sys.exit(1)
 
     # Parse UU.pl style args
     if len(args_remaining) == 0:
@@ -300,6 +308,7 @@ def main():
         else:
             print(prompt, end="", flush=True)
             for line in sys.stdin:
+                outputdata = {}
                 line = line.strip()
                 if line in ["?", "help"]:
                     print(
@@ -308,8 +317,10 @@ def main():
                 elif line == "quit":
                     break
                 elif cmd(line):
+                    totext(outputdata)
                     print("\t[OK]")
                 else:
+                    totext(outputdata)
                     print("\t[ERROR]")
                 print(prompt, end="", flush=True)
             print("")
