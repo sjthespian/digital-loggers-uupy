@@ -124,7 +124,7 @@ def cmd(arg=None):
                     statestr = " ON" if state & (1 << (i - 1)) else " OFF"
                     lockstr = " LOCKED" if lock & (1 << (i - 1)) else ""
                     outputdata["outlets"].setdefault("status", {})
-                    outputdata["outlets"]["status"][i] = f"{statestr}{lockstr}"
+                    outputdata["outlets"]["status"][i] = f"{statestr}{lockstr}".strip()
         else:
             for m in re.findall(
                 "<td.*?>([1-8])<\/td>\s*<td>(.*?)<\/td>[^\/]*?\W(ON|OFF)\W",
@@ -163,8 +163,9 @@ def cmd(arg=None):
                     '<th bgcolor="#DDDDFF" align=left>\s+Controller:\s+([^\<]*)',
                     content,
                 )
-                outputdata["outlets"].setdefault("name", {})
-                outputdata["outlets"]["name"][0] = m.group(1).strip()
+                if m:
+                    outputdata["outlets"].setdefault("name", {})
+                    outputdata["outlets"]["name"][0] = m.group(1).strip()
 
         for m in re.findall(
             "<td.*?>([1-8])<\/td>\s*<td>(.*?)<\/td>[^\/]*?\W(ON|OFF)\W",
@@ -309,6 +310,7 @@ def main():
             print(prompt, end="", flush=True)
             for line in sys.stdin:
                 outputdata = {}
+
                 line = line.strip()
                 if line in ["?", "help"]:
                     print(
